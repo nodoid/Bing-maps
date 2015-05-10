@@ -3,6 +3,7 @@
 using Xamarin.Forms;
 using System.Threading.Tasks;
 using dev.virtualearth.net.webservices.v1.geocode;
+using System.ServiceModel;
 
 namespace WCF
 {
@@ -19,47 +20,49 @@ namespace WCF
 
         void CreateUI()
         {
-            Location loc = null;
-
             var lblAddress = new Label()
             {
                 Text = "Enter the address",
-                TextColor = Color.Black
+                TextColor = Color.Black,
+                HorizontalOptions = LayoutOptions.CenterAndExpand
             };
             var enterText = new Entry()
             {
-                Placeholder = "Address"
+                Placeholder = "Address",
+                TextColor = Color.Blue,
+                HorizontalOptions = LayoutOptions.CenterAndExpand
             };
             var btnFind = new Button()
             {
-                Text = "Find locaction"
+                Text = "Find locaction",
+                HorizontalOptions = LayoutOptions.CenterAndExpand
             };
             btnFind.Clicked += async delegate
             {
                 if (!string.IsNullOrEmpty(enterText.Text))
-                    loc = await GeocodeAddress(enterText.Text);
-
-                var uri = await Map.GetMapUri(loc.Latitude, loc.Longitude, 2, "HYBRID", 300, 300);
-
-                await Navigation.PushAsync(new Map(uri));
+                    GeocodeAddress(enterText.Text);
             };
            
             Content = new StackLayout()
             {
                 Orientation = StackOrientation.Vertical,
                 HorizontalOptions = LayoutOptions.StartAndExpand,
-                VerticalOptions = LayoutOptions.FillAndExpand,
                 Padding = new Thickness(20, 20),
                 Children = { lblAddress, enterText, btnFind }
             };
         }
 
-        async Task<Location> GeocodeAddress(string address)
+        void GeocodeAddress(string address)
         {
-            var geocodeRequest = new GeocodeRequest();
-            geocodeRequest.Credentials = new Credentials();
-            geocodeRequest.Credentials.ApplicationId = App.Self.APIKEY;
-            geocodeRequest.Query = address;
+            var geocodeRequest = new GeocodeRequest
+            {
+                Credentials = new Credentials
+                {
+                    ApplicationId = App.Self.APIKEY,
+                },
+                Query = address,
+                Address = new Address()
+            };
 
             var filters = new ConfidenceFilter[1];
             filters[0] = new ConfidenceFilter();
@@ -72,16 +75,29 @@ namespace WCF
             geocodeRequest.Options = geocodeOptions;
 
             var geocodeService = new GeocodeServiceClient("BasicHttpBinding_IGeocodeService");
+
+            var myLoc = new Location();
+
+            geocodeService.GeocodeCompleted += async (object sender, GeocodeCompletedEventArgs e) =>
+            {
+                if (e.Error == null)
+                {
+                    var res = e.Result;
+                    if (e.Result.Results.Length > 0)
+                    if (e.Result.Results[0].Locations.Length > 0)
+                    {
+                        myLoc = e.Result.Results[0].Locations[0];
+                        var uri = await Map.GetMapUri(myLoc.Latitude, myLoc.Longitude, 2, "HYBRID", 300, 300);
+
+                        await Navigation.PushAsync(new Map(uri));
+                    }
+
+                }
+
+            };
+
             geocodeService.GeocodeAsync(geocodeRequest);
-
-            if (geocodeResponse.Results.Length > 0)
-            if (geocodeResponse.Results[0].Locations.Length > 0)
-                return geocodeResponse.Results[0].Locations[0];
-            else
-                return null;
         }
-
-
     }
 }
 
