@@ -8,27 +8,13 @@ namespace WCF
     {
         public static App Self { get; private set; }
 
-        public readonly string APIKEY = "Aslv-q1IU77X818-ueMA8nC9Bjm9BDtUyf1IUMZiGFhEZnIP_uNyEk8DpOWX4InO";
+        public readonly string APIKEY = "INSERT_YOUR_KEY";
 
         public App()
         {
             App.Self = this;
             // The root page of your application
-            MainPage = new ContentPage
-            {
-                Content = new StackLayout
-                {
-                    VerticalOptions = LayoutOptions.Center,
-                    Children =
-                    {
-                        new Label
-                        {
-                            XAlign = TextAlignment.Center,
-                            Text = "Welcome to Xamarin Forms!"
-                        }
-                    }
-                }
-            };
+            MainPage = new Geocode();
         }
 
         protected override void OnStart()
